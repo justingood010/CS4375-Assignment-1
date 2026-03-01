@@ -133,4 +133,8 @@ word_embedding.pkl
 training.json
 validation.json
 test.json
-Data_Embedding.zip
+CS4375_Assignment_sp26.pdf
+/Data_Embedding
+/Submission
+/results
+/.vscode

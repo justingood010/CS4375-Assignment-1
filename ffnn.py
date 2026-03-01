@@ -31,11 +31,17 @@ class FFNN(nn.Module):
         return self.loss(predicted_vector, gold_label)
 
     def forward(self, input_vector):
-        # [to fill] obtain first hidden layer representation
+        # input_vector: torch tensor of shape (input_dim,)
+        # compute hidden layer pre-activation: linear transformation
+        hidden_linear = self.W1(input_vector)
+        # apply non-linear activation
+        hidden = self.activation(hidden_linear)
 
-        # [to fill] obtain output layer representation
+        # compute output layer (logits)
+        output_linear = self.W2(hidden)
 
-        # [to fill] obtain probability dist.
+        # apply softmax to get log-probabilities
+        predicted_vector = self.softmax(output_linear)
 
         return predicted_vector
 
@@ -183,5 +189,45 @@ if __name__ == "__main__":
         print("Validation accuracy for epoch {}: {}".format(epoch + 1, correct / total))
         print("Validation time for this epoch: {}".format(time.time() - start_time))
 
-    # write out to results/test.out
+    # ======= Test prediction and output =======
+    if args.test_data != "to fill":
+        print("========== Evaluating test set ==========")
+        # Load test data
+        with open(args.test_data) as test_f:
+            test_json = json.load(test_f)
+        test_data = [(elt["text"].split(), int(elt["stars"])) for elt in test_json]
+        test_vecs = []
+        gold_labels = []
+        for document, gold_label in test_data:
+            vector = torch.zeros(len(word2index))
+            for word in document:
+                index = word2index.get(word, word2index[unk])
+                vector[index] += 1
+            test_vecs.append(vector)
+            gold_labels.append(gold_label)
+
+        model.eval()
+        predictions = []
+        overshoot = 0
+        undershoot = 0
+        correct = 0
+        with torch.no_grad():
+            for vec, gold_label in zip(test_vecs, gold_labels):
+                output = model(vec)
+                pred_label = torch.argmax(output).item() + 1  # convert back to 1-5
+                predictions.append(pred_label)
+                if pred_label == gold_label:
+                    correct += 1
+                elif pred_label > gold_label:
+                    overshoot += 1
+                else:
+                    undershoot += 1
+
+        total = len(gold_labels)
+        print(f"Test set results: Correct: {correct}/{total}, Overshoot: {overshoot}, Undershoot: {undershoot}")
+        os.makedirs("results", exist_ok=True)
+        with open("results/test.out", "w") as out_f:
+            for label in predictions:
+                out_f.write(str(label) + "\n")
+        print("Test predictions written to results/test.out")
     

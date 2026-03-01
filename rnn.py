@@ -23,21 +23,26 @@ class RNN(nn.Module):
         self.numOfLayer = 1
         self.rnn = nn.RNN(input_dim, h, self.numOfLayer, nonlinearity='tanh')
         self.W = nn.Linear(h, 5)
-        self.softmax = nn.LogSoftmax(dim=1)
+        self.softmax = nn.LogSoftmax(dim=0)
         self.loss = nn.NLLLoss()
 
     def compute_Loss(self, predicted_vector, gold_label):
         return self.loss(predicted_vector, gold_label)
 
+
+
+
     def forward(self, inputs):
-        # [to fill] obtain hidden layer representation (https://pytorch.org/docs/stable/generated/torch.nn.RNN.html)
-        _, hidden = 
-        # [to fill] obtain output layer representations
-
-        # [to fill] sum over output 
-
-        # [to fill] obtain probability dist.
-
+        # inputs: (seq_len, batch, input_size)
+        # Pass through RNN
+        output, hidden = self.rnn(inputs)
+        # Use last hidden state for classification
+        last_hidden = hidden[-1]  # shape: (1, batch, h)
+        last_hidden = last_hidden.squeeze(0)  # shape: (batch, h)
+        # Pass through output layer
+        logits = self.W(last_hidden)  # shape: (batch, 5)
+        # Apply softmax to get log probabilities
+        predicted_vector = self.softmax(logits)
         return predicted_vector
 
 
@@ -80,7 +85,7 @@ if __name__ == "__main__":
     model = RNN(50, args.hidden_dim)  # Fill in parameters
     # optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    word_embedding = pickle.load(open('./word_embedding.pkl', 'rb'))
+    word_embedding = pickle.load(open('./Data_Embedding/word_embedding.pkl', 'rb'))
 
     stopping_condition = False
     epoch = 0
