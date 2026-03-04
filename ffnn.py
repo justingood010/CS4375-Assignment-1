@@ -195,7 +195,7 @@ if __name__ == "__main__":
         # Load test data
         with open(args.test_data) as test_f:
             test_json = json.load(test_f)
-        test_data = [(elt["text"].split(), int(elt["stars"])) for elt in test_json]
+        test_data = [(elt["text"].split(), int(elt["stars"]-1)) for elt in test_json]
         test_vecs = []
         gold_labels = []
         for document, gold_label in test_data:
