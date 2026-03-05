@@ -120,7 +120,7 @@ if __name__ == "__main__":
                 vectors = [word_embedding[i.lower()] if i.lower() in word_embedding.keys() else word_embedding['unk'] for i in input_words ]
 
                 # Transform the input into required shape
-                vectors = torch.tensor(vectors).view(len(vectors), 1, -1)
+                vectors = torch.tensor(np.array(vectors)).view(len(vectors), 1, -1)
                 output = model(vectors)
 
                 # Get loss
@@ -181,6 +181,69 @@ if __name__ == "__main__":
 
         epoch += 1
 
+    # Test the model on test data
+    print("\n========== Testing on test data ==========")
+    test_data, _ = load_data(args.test_data, args.test_data)  # Load test data
+    
+    model.eval()
+    correct = 0
+    total = 0
+    undershooting = 0  # predicted < actual
+    overshooting = 0   # predicted > actual
+    squared_diff_sum = 0  # sum of squared differences
+    
+    test_results = []
+    
+    for input_words, gold_label in tqdm(test_data):
+        input_words = " ".join(input_words)
+        input_words = input_words.translate(input_words.maketrans("", "", string.punctuation)).split()
+        vectors = [word_embedding[i.lower()] if i.lower() in word_embedding.keys() else word_embedding['unk'] for i
+                   in input_words]
+        
+        vectors = torch.tensor(np.array(vectors)).view(len(vectors), 1, -1)
+        output = model(vectors)
+        predicted_label = torch.argmax(output).item()
+        
+        correct += int(predicted_label == gold_label)
+        total += 1
+        
+        # Calculate squared difference
+        squared_diff = (predicted_label - gold_label) ** 2
+        squared_diff_sum += squared_diff
+        
+        if predicted_label < gold_label:
+            undershooting += 1
+        elif predicted_label > gold_label:
+            overshooting += 1
+        
+        test_results.append(f"Gold: {gold_label}, Predicted: {predicted_label}")
+    
+    # Calculate mean squared error
+    mean_squared_error = squared_diff_sum / total
+    
+    # Write results to file
+    with open('results/test.out', 'w') as f:
+        f.write("Test Results\n")
+        f.write("=" * 50 + "\n")
+        f.write(f"Total: {total}\n")
+        f.write(f"Correct: {correct}\n")
+        f.write(f"Accuracy: {correct / total:.4f}\n")
+        f.write(f"Undershooting (predicted < actual): {undershooting}\n")
+        f.write(f"Overshooting (predicted > actual): {overshooting}\n")
+        f.write(f"Mean Squared Error: {mean_squared_error:.4f}\n")
+        f.write("=" * 50 + "\n\n")
+        f.write("Detailed Results:\n")
+        for result in test_results:
+            f.write(result + "\n")
+    
+    print("\nTest Results:")
+    print(f"Total: {total}")
+    print(f"Correct: {correct}")
+    print(f"Accuracy: {correct / total:.4f}")
+    print(f"Undershooting (predicted < actual): {undershooting}")
+    print(f"Overshooting (predicted > actual): {overshooting}")
+    print(f"Mean Squared Error: {mean_squared_error:.4f}")
+    print("Results saved to results/test.out")
 
 
     # You may find it beneficial to keep track of training accuracy or training loss;

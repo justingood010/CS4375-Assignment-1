@@ -211,11 +211,17 @@ if __name__ == "__main__":
         overshoot = 0
         undershoot = 0
         correct = 0
+        squared_diff_sum = 0
         with torch.no_grad():
             for vec, gold_label in zip(test_vecs, gold_labels):
                 output = model(vec)
                 pred_label = torch.argmax(output).item() + 1  # convert back to 1-5
                 predictions.append(pred_label)
+                
+                # Calculate squared difference
+                squared_diff = (pred_label - gold_label) ** 2
+                squared_diff_sum += squared_diff
+                
                 if pred_label == gold_label:
                     correct += 1
                 elif pred_label > gold_label:
@@ -224,7 +230,8 @@ if __name__ == "__main__":
                     undershoot += 1
 
         total = len(gold_labels)
-        print(f"Test set results: Correct: {correct}/{total}, Overshoot: {overshoot}, Undershoot: {undershoot}")
+        mean_squared_error = squared_diff_sum / total
+        print(f"Test set results: Correct: {correct}/{total}, Overshoot: {overshoot}, Undershoot: {undershoot}, MSE: {mean_squared_error:.4f}")
         os.makedirs("results", exist_ok=True)
         with open("results/test.out", "w") as out_f:
             for label in predictions:
